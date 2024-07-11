@@ -62,6 +62,8 @@ export class TagProcessor extends Component {
                 text = this.fixText(text);
 
                 try {
+                    if (!text) throw new Error(`No tag text`);
+
                     const { name, page, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
                     const baseUrl = this.generateBaseUrl(tag, page, hash);
                     const url = this.generateUrl(baseUrl);
@@ -76,12 +78,14 @@ export class TagProcessor extends Component {
                     onmouseout="this.style.color='${color}'" 
                     style="color: ${color};" 
                     href="${url}"
-                >${icon ? icon + ' ' : ''}${displayText ?? name}</a>`;
+                >${icon ? icon + ' ' : ''}${displayText ?? name ?? '<EMPTY>'}</a>`;
                     return { tagText, tag, text, span, displayText, shortenedTagText, start, end };
                 } catch (err) {
                     const span = createSpan()
+                    span.setAttribute('style', `background-color: IndianRed; padding: 2px 4px; border-radius: 4px; `);
                     span.innerHTML = text;
-                    return { tagText, tag, text, span, displayText: null, shortenedTagText: null, start, end }
+                    span.innerHTML += `Error: ${err?.message}`;
+                    return { tagText, tag, text, span, displayText: null, shortenedTagText: null, start, end, err }
                 }
             });
 

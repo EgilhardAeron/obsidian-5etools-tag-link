@@ -1,5 +1,5 @@
 import { syntaxTree } from "@codemirror/language";
-import { EditorSelection, Range } from "@codemirror/state";
+import { EditorSelection, Range, RangeSetBuilder } from "@codemirror/state";
 import {
     type DecorationSet,
     Decoration,
@@ -21,7 +21,7 @@ function selectionAndRangeOverlap(
     rangeTo: number
 ) {
     for (const range of selection.ranges) {
-        if (range.from <= rangeTo && range.to >= rangeFrom) {
+        if (range.from < rangeTo && range.to > rangeFrom) {
             return true;
         }
     }
@@ -42,7 +42,7 @@ export class TagWidget extends WidgetType {
 
     toDOM(view: EditorView): HTMLElement {
         const span = createSpan()
-        span.innerHTML = ` ${this.link.span.outerHTML} `
+        span.innerHTML = `${this.link.span.outerHTML}`;
         return span;
     }
 }
@@ -51,7 +51,6 @@ function inlineRender(view: EditorView, plugin: Tools5eTagLinkPlugin) {
     const currentFile = this.app.workspace.getActiveFile();
     if (!currentFile) return;
 
-    const posSet = new Set();
     const widgets: Range<Decoration>[] = [];
     const selection = view.state.selection;
     for (const { from, to } of view.visibleRanges) {
@@ -71,23 +70,14 @@ function inlineRender(view: EditorView, plugin: Tools5eTagLinkPlugin) {
                     const start = node.from + link.start;
                     const end = node.from + link.end;
 
-                    const posHash = `${start}:${end}`;
-                    if (posSet.has(posHash)) {
-                        continue;
-                    }
-                    posSet.add(posHash);
-    
-                    const mark = Decoration.mark({ attributes: { style: "font-weight: 700; font-style: italic;" } }).range(start, end);
-                    widgets.push(mark);
+                    widgets.push(Decoration.mark({ attributes: { style: "font-weight: 700; font-style: italic;" } }).range(start, end));
 
                     if (selectionAndRangeOverlap(selection, start, end)) {
-                        const markActive = Decoration.mark({ attributes: { style: "background-color: yellow;" } }).range(start, end);
-                        widgets.push(markActive);
+                        widgets.push(Decoration.mark({ attributes: { style: "background-color: yellow;" } }).range(start, end));
                         continue;
                     }
 
-                    const tag = Decoration.widget({ widget: tagWidget }).range(end);
-                    widgets.push(tag);
+                    widgets.push(Decoration.replace({ widget: tagWidget }).range(start, end));
                 }
             }
         });
