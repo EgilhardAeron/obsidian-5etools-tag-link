@@ -16,6 +16,7 @@ export type GateFrameOption = {
 }
 
 type OpenGatePlugin = { 
+    id: string;
 	findGateBy(field: keyof GateFrameOption, value: string): GateFrameOption | undefined,
 	addGate(gate: GateFrameOption): Promise<void>;
 }

@@ -1,6 +1,6 @@
 import { isEqual, pick } from 'lodash';
 import { Notice, Plugin } from 'obsidian';
-import type { OpenGatePlugin } from 'open-gate';
+import { OpenGatePlugin } from 'open-gate';
 import { inlinePlugin } from 'processor/live-preview';
 import { TagProcessor } from 'processor/processor';
 import Tools5eTagLinkPluginSettings, { Tools5eTagLinkPluginSettingsTab } from 'settings/settings';
@@ -32,31 +32,38 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 
 	async loadSettings() {
 		if (this.settings.getOrDefault('mode') === 'opengate') {
-			const opengatePlugin = await this.getOpenGatePlugin();
-			if (!opengatePlugin) {
-				new Notice(`No open-gate plugin found! Fallbacking to 'link' mode...`);
-				this.settings.set('mode', 'link');
-			} else {
+			const opengatePlugin = await this.getPlugin<OpenGatePlugin>('open-gate');
+			switch (true) {
+				case opengatePlugin === undefined: {
+					new Notice(`Could not inspect plugins... No further action taken.`);
+					break;
+				}
+				case opengatePlugin === null: {
+					new Notice(`No open-gate plugin found! Fallbacking to 'link' mode...`);
+					this.settings.set('mode', 'link');
+					break;
+				}
+				default: {
+					const settingsGate = {
+						id: this.settings.getOrDefault('openGateId'),
+						icon: this.settings.getOrDefault('openGateIcon'),
+						title: this.settings.getOrDefault('openGateTitle'),
+						url: this.settings.getOrDefault('tools5eUrl'),
+						profileKey: this.settings.getOrDefault('openGateId'),
+						css: this.settings.getOrDefault('openGateCss'),
+						hasRibbon: true,
+					};
 
-				const settingsGate = {
-					id: this.settings.getOrDefault('openGateId'),
-					icon: this.settings.getOrDefault('openGateIcon'),
-					title: this.settings.getOrDefault('openGateTitle'),
-					url: this.settings.getOrDefault('tools5eUrl'),
-					profileKey: this.settings.getOrDefault('openGateId'),
-					css: this.settings.getOrDefault('openGateCss'),
-					hasRibbon: true,
-				};
-
-				const gate = opengatePlugin.findGateBy('id', settingsGate.id);
-				if (!gate) {
-					opengatePlugin.addGate(settingsGate);
-				} else {
-					const fields = ['id', 'title', 'url', 'profileKey'];
-					if (!isEqual(pick(gate, fields), pick(settingsGate, fields))) {
+					const gate = opengatePlugin.findGateBy('id', settingsGate.id);
+					if (!gate) {
 						opengatePlugin.addGate(settingsGate);
 					} else {
-						new Notice(`Gate '${settingsGate.title}' configured successfully!`);
+						const fields = ['id', 'title', 'url', 'profileKey'];
+						if (!isEqual(pick(gate, fields), pick(settingsGate, fields))) {
+							opengatePlugin.addGate(settingsGate);
+						} else {
+							new Notice(`Gate '${settingsGate.title}' configured successfully!`);
+						}
 					}
 				}
 			}
@@ -68,9 +75,13 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 		await this.loadSettings();
 	}
 
-	private async getOpenGatePlugin() {
-		const plugin: OpenGatePlugin | undefined = (this.app as any).plugin?.plugins?.["open-gate"];
-		return plugin;
+	private async getPlugin<TPlugin extends { id: string; }>(id: string): Promise<TPlugin | null | undefined> {
+		try {
+			const plugin = Object.entries((this.app as any).plugins.plugins).find(([key]) => key === id)?.[1] ?? null;
+			return plugin as TPlugin | null;
+		} catch (err) {
+			return undefined;
+		}
 	}
 }
 
