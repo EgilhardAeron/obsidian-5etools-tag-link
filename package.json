@@ -12,6 +12,9 @@
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
+		"@codemirror/language": "^6",
+		"@codemirror/state": "^6",
+		"@codemirror/view": "^6",
 		"@types/lodash": "^4.17.6",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
@@ -24,5 +27,10 @@
 	},
 	"dependencies": {
 		"lodash": "^4.17.21"
+	},
+	"peerDependencies": {
+		"@codemirror/language": "^6",
+		"@codemirror/state": "^6",
+		"@codemirror/view": "^6"
 	}
 }

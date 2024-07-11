@@ -1,6 +1,7 @@
 import { isEqual, pick } from 'lodash';
 import { Notice, Plugin } from 'obsidian';
 import type { OpenGatePlugin } from 'open-gate';
+import { inlinePlugin } from 'processor/live-preview';
 import { TagProcessor } from 'processor/processor';
 import Tools5eTagLinkPluginSettings, { Tools5eTagLinkPluginSettingsTab } from 'settings/settings';
 
@@ -10,7 +11,6 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 
 	async onload() {
 		this.settings = new Tools5eTagLinkPluginSettings(await this.loadData());
-
 		this.addSettingTab(new Tools5eTagLinkPluginSettingsTab(this.app, this));
 
 		this.app.workspace.onLayoutReady(async () => {
@@ -23,6 +23,7 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 		this.registerMarkdownPostProcessor((element, context) => {
 			this.processor.postprocessor(element, context)
 		});
+		this.registerEditorExtension([inlinePlugin(this)]);
 	}
 
 	onunload() {
@@ -31,7 +32,7 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 
 	async loadSettings() {
 		if (this.settings.getOrDefault('mode') === 'opengate') {
-			const opengatePlugin = this.getOpenGatePlugin();
+			const opengatePlugin = await this.getOpenGatePlugin();
 			if (!opengatePlugin) {
 				new Notice(`No open-gate plugin found! Fallbacking to 'link' mode...`);
 				this.settings.set('mode', 'link');
@@ -67,9 +68,8 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 		await this.loadSettings();
 	}
 
-	private getOpenGatePlugin() {
-		const plugins = (this.app as unknown as { plugin: { plugins: Record<string, any> } }).plugin.plugins;
-		const plugin: OpenGatePlugin | undefined = plugins['open-gate'];
+	private async getOpenGatePlugin() {
+		const plugin: OpenGatePlugin | undefined = (this.app as any).plugin?.plugins?.["open-gate"];
 		return plugin;
 	}
 }

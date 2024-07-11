@@ -22,32 +22,7 @@ export class TagProcessor extends Component {
         const entries = element.findAll("p, li, td");
 
         for (let entry of entries) {
-            if (!entry.innerHTML) continue;
-            const tagsInText = Renderer.splitByTags(entry.innerHTML).filter((x: string) => x.startsWith('{@'));
-            if (!tagsInText.length) continue;
-
-            const links = tagsInText.map((tagText) => {
-                let [tag, text] = Renderer.splitFirstSpace(tagText.slice(1, -1));
-                tag = this.fixTag(tag);
-                text = this.fixText(text);
-
-                try {
-                    const { name, page, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
-                    const baseUrl = this.generateBaseUrl(tag, page, hash);
-                    const url = this.generateUrl(baseUrl);
-                    const icon = this.getIcon(tag);
-                    const bgColor = this.getBgColor(tag);
-
-                    const span = createSpan(`w3-tag w3-${bgColor} w3-round-large`);
-                    span.innerHTML = `<a href="${url}">${icon ? icon + ' ' : ''}${displayText ?? name}</a>`;
-                    return { tagText, tag, text, span };
-                } catch (err) {
-                    console.log(tag, text, err);
-                    const span = createSpan()
-                    span.innerHTML = text;
-                    return { tagText, tag, text, span }
-                }
-            });
+            const links = this.getLinks(entry.innerHTML);
 
             for (let i = 0; i < entry.childNodes.length; i++) {
                 const childNode = entry.childNodes.item(i);
@@ -69,6 +44,48 @@ export class TagProcessor extends Component {
         }
     }
 
+    getLinks(content: string) {
+        if (!content) return [];
+        const tagsInText = Renderer.splitByTags(content).filter((x: string) => x.startsWith('{@'));
+        if (!tagsInText.length) return [];
+
+        let currentPos = 0;
+        const links = tagsInText.map((tagText) => {
+            const start = content.indexOf(tagText, currentPos);
+            const end = tagText.endsWith("}") ? start + tagText.length : start + 2;
+            currentPos = end;
+
+            let [tag, text] = Renderer.splitFirstSpace(tagText.slice(1, -1));
+            tag = this.fixTag(tag);
+            text = this.fixText(text);
+
+            try {
+                const { name, page, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
+                const baseUrl = this.generateBaseUrl(tag, page, hash);
+                const url = this.generateUrl(baseUrl);
+                const icon = this.getIcon(tag);
+                const { color = "Black", hoverColor = "DarkSlateGray", bgColor = 'LightGray' } = this.getColors(tag);
+                const shortenedTagText = this.shortenTagText(tagText, displayText);
+
+                const span = createSpan();
+                span.setAttribute('style', `background-color: ${bgColor}; padding: 2px 4px; border-radius: 4px; `);
+                span.innerHTML = `<a 
+                    onmouseover="this.style.color='${hoverColor}'" 
+                    onmouseout="this.style.color='${color}'" 
+                    style="color: ${color};" 
+                    href="${url}"
+                >${icon ? icon + ' ' : ''}${displayText ?? name}</a>`;
+                return { tagText, tag, text, span, displayText, shortenedTagText, start, end };
+            } catch (err) {
+                const span = createSpan()
+                span.innerHTML = text;
+                return { tagText, tag, text, span, displayText: null, shortenedTagText: null, start, end }
+            }
+        });
+
+        return links;
+    }
+
     private fixTag(tag: string) {
         switch (tag) {
             case '@monster':
@@ -84,16 +101,26 @@ export class TagProcessor extends Component {
         return text.replace(/;/g, '|');
     }
 
-    private getBgColor(tag: string) {
+    private shortenTagText(tagText: string, displayText: string|null) {
+        if (!displayText) return displayText;
+
+        let str = tagText;
+        str = str.substring(1, str.lastIndexOf(displayText) - 1);
+        str = str.endsWith(';') ? str.substring(0, str.length - 1) : str;
+        str = `{${str}}`;
+        return str;
+    }
+
+    private getColors(tag: string): { color?: string, hoverColor?: string, bgColor?: string } {
         switch (tag) {
             case '@creature':
-                return `light-blue`;
+                return { bgColor: `LightBlue` };
             case '@item':
-                return `khaki`;
+                return { bgColor: `Khaki` };
             case '@spell':
-                return `deep-purple`;
+                return { bgColor: `RebeccaPurple`, color: `White`, hoverColor: `LightGray` };
             default:
-                return 'light-gray';
+                return {};
         }
     }
 
