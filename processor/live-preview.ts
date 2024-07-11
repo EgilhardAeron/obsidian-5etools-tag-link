@@ -51,6 +51,7 @@ function inlineRender(view: EditorView, plugin: Tools5eTagLinkPlugin) {
     const currentFile = this.app.workspace.getActiveFile();
     if (!currentFile) return;
 
+    const posSet = new Set();
     const widgets: Range<Decoration>[] = [];
     const selection = view.state.selection;
     for (const { from, to } of view.visibleRanges) {
@@ -65,8 +66,16 @@ function inlineRender(view: EditorView, plugin: Tools5eTagLinkPlugin) {
                 const links = plugin.processor.getLinks(original);
 
                 for (const link of links) {
+                    const tagWidget = new TagWidget(link);
+
                     const start = node.from + link.start;
                     const end = node.from + link.end;
+
+                    const posHash = `${start}:${end}`;
+                    if (posSet.has(posHash)) {
+                        continue;
+                    }
+                    posSet.add(posHash);
     
                     const mark = Decoration.mark({ attributes: { style: "font-weight: 700; font-style: italic;" } }).range(start, end);
                     widgets.push(mark);
@@ -77,7 +86,7 @@ function inlineRender(view: EditorView, plugin: Tools5eTagLinkPlugin) {
                         continue;
                     }
 
-                    const tag = Decoration.replace({ widget: new TagWidget(link) }).range(end, end + 1);
+                    const tag = Decoration.widget({ widget: tagWidget }).range(end);
                     widgets.push(tag);
                 }
             }

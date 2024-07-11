@@ -50,38 +50,40 @@ export class TagProcessor extends Component {
         if (!tagsInText.length) return [];
 
         let currentPos = 0;
-        const links = tagsInText.map((tagText) => {
-            const start = content.indexOf(tagText, currentPos);
-            const end = tagText.endsWith("}") ? start + tagText.length : start + 2;
-            currentPos = end;
+        const links = tagsInText
+            .filter(tagText => tagText.endsWith("}"))
+            .map((tagText) => {
+                const start = content.indexOf(tagText, currentPos);
+                const end = start + tagText.length;
+                currentPos = end;
 
-            let [tag, text] = Renderer.splitFirstSpace(tagText.slice(1, -1));
-            tag = this.fixTag(tag);
-            text = this.fixText(text);
+                let [tag, text] = Renderer.splitFirstSpace(tagText.slice(1, -1));
+                tag = this.fixTag(tag);
+                text = this.fixText(text);
 
-            try {
-                const { name, page, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
-                const baseUrl = this.generateBaseUrl(tag, page, hash);
-                const url = this.generateUrl(baseUrl);
-                const icon = this.getIcon(tag);
-                const { color = "Black", hoverColor = "DarkSlateGray", bgColor = 'LightGray' } = this.getColors(tag);
-                const shortenedTagText = this.shortenTagText(tagText, displayText);
+                try {
+                    const { name, page, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
+                    const baseUrl = this.generateBaseUrl(tag, page, hash);
+                    const url = this.generateUrl(baseUrl);
+                    const icon = this.getIcon(tag);
+                    const { color = "Black", hoverColor = "DarkSlateGray", bgColor = 'LightGray' } = this.getColors(tag);
+                    const shortenedTagText = this.shortenTagText(tagText, displayText);
 
-                const span = createSpan();
-                span.setAttribute('style', `background-color: ${bgColor}; padding: 2px 4px; border-radius: 4px; `);
-                span.innerHTML = `<a 
+                    const span = createSpan();
+                    span.setAttribute('style', `background-color: ${bgColor}; padding: 2px 4px; border-radius: 4px; `);
+                    span.innerHTML = `<a 
                     onmouseover="this.style.color='${hoverColor}'" 
                     onmouseout="this.style.color='${color}'" 
                     style="color: ${color};" 
                     href="${url}"
                 >${icon ? icon + ' ' : ''}${displayText ?? name}</a>`;
-                return { tagText, tag, text, span, displayText, shortenedTagText, start, end };
-            } catch (err) {
-                const span = createSpan()
-                span.innerHTML = text;
-                return { tagText, tag, text, span, displayText: null, shortenedTagText: null, start, end }
-            }
-        });
+                    return { tagText, tag, text, span, displayText, shortenedTagText, start, end };
+                } catch (err) {
+                    const span = createSpan()
+                    span.innerHTML = text;
+                    return { tagText, tag, text, span, displayText: null, shortenedTagText: null, start, end }
+                }
+            });
 
         return links;
     }
@@ -101,7 +103,7 @@ export class TagProcessor extends Component {
         return text.replace(/;/g, '|');
     }
 
-    private shortenTagText(tagText: string, displayText: string|null) {
+    private shortenTagText(tagText: string, displayText: string | null) {
         if (!displayText) return displayText;
 
         let str = tagText;
