@@ -57,15 +57,15 @@ export class TagProcessor extends Component {
                 try {
                     if (!text) throw new Error(`No tag text`);
 
-                    const { name, page, source, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
-                    await this.api.downloadData(tag, source, hash, name);
+                    let { name, page, source, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
+                    const data = await this.api.downloadData(tag, source, hash, name);
+                    hash = this.fixHash(hash, data);
 
                     const baseUrl = this.generateBaseUrl(tag, page, hash);
                     const url = this.generateUrl(baseUrl);
                     const icon = this.getIcon(tag);
-                    const { color = "Black", hoverColor = "DarkSlateGray", bgColor = 'LightGray' } = this.getColors(tag);
+                    const { color = "Black", bgColor = 'LightGray' } = this.getColors(tag);
                     const shortenedTagText = this.shortenTagText(tagText, displayText);
-
 
                     const spanTag = createSpan();
                     spanTag.setAttribute('style', `background-color: ${bgColor}; color: ${color}; padding: 2px 4px; border-radius: 4px; `);
@@ -87,6 +87,13 @@ export class TagProcessor extends Component {
             }));
 
         return links;
+    }
+
+    fixHash(hash: string, data: any): string {
+        if (typeof data['srd'] !== 'string') return hash;
+        console.log(hash, data);
+        const [pageHash, sourceHash] = hash.split('_');
+        return `${encodeURIComponent(data.name.toLowerCase())}_${sourceHash}`;
     }
 
     private fixTag(tag: string) {
@@ -114,14 +121,14 @@ export class TagProcessor extends Component {
         return str;
     }
 
-    private getColors(tag: string): { color?: string, hoverColor?: string, bgColor?: string } {
+    private getColors(tag: string): { color?: string, bgColor?: string } {
         switch (tag) {
             case '@creature':
                 return { bgColor: `LightBlue` };
             case '@item':
                 return { bgColor: `Khaki` };
             case '@spell':
-                return { bgColor: `RebeccaPurple`, color: `White`, hoverColor: `LightGray` };
+                return { bgColor: `RebeccaPurple`, color: `White` };
             default:
                 return {};
         }

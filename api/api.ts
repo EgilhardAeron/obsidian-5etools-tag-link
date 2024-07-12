@@ -125,20 +125,18 @@ export class Api {
                     name = name.toLowerCase();
                     source = source.toLowerCase();
 
-                    return data.find(d => paths.find(p => {
+                    let entry: any = undefined;
+                    data.find(d => paths.find(p => {
                         const dataAtPath = get(d, p) as any[];
                         if (!dataAtPath) return false;
 
-                        return dataAtPath.find(x => {
-                            let ok = false;
-                            ok = x.name.toLowerCase() === name.toLowerCase();
-                            if (!ok) return ok;
-                            if (!x.source) return ok;
-                            ok = x.source.toLowerCase() === source.toLowerCase();
-                            return ok;
-                        }
-                        )
+                        dataAtPath.find(x => {
+                            const found = (x.name.toLowerCase() === name.toLowerCase() || (typeof (x.srd) === 'string' ? x.srd.toLowerCase() === name.toLowerCase() : false)) && (!x.source || x.source.toLowerCase() === source.toLowerCase());
+                            if (found) entry = x;
+                            return found;
+                        })
                     }));
+                    return entry;
                 }
 
                 switch (tag) {
