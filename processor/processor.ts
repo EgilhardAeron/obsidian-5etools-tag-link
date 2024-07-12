@@ -149,6 +149,7 @@ export class TagProcessor extends Component {
     }
 
     private getIcon(tag: string) {
+        if (this.settings.get('hideIcons')) return null;
         switch (tag) {
             case '@creature':
                 return `👤`;

@@ -45,8 +45,8 @@ export class Tools5eTagLinkPluginSettingsTab extends PluginSettingTab {
             const fragment = createFragment();
             const div = createEl('div');
             div.innerHTML = `<ul>
-                <li><b>Link</b> will open the page in your browser
-                <li><b>Open Gate</b> will open the page in Obsidian. <em>Requires the 'Open Gate' plugin</em>
+                <li><b>Link</b> will open the page in your browser.
+                <li><b>Open Gate</b> will open the page in Obsidian. <em>Requires the 'Open Gate' plugin</em>.
             </ul>`
             fragment.appendChild(div);
             return fragment;
@@ -64,8 +64,19 @@ export class Tools5eTagLinkPluginSettingsTab extends PluginSettingTab {
                 })));
 
         new Setting(containerEl)
+            .setName('Hide icons')
+            .setDesc('Hide the icons that show on supported tags.')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.get('hideIcons'))
+                .onChange(debounce(async (value: boolean) => {
+                    this.plugin.settings.set('hideIcons', value);
+                    await this.plugin.saveSettings();
+                })));
+
+
+        new Setting(containerEl)
             .setName('5eTools url (Optional)')
-            .setDesc('The URL of your 5etools instance')
+            .setDesc('The URL of your 5etools instance.')
             .addText(text => text
                 .setPlaceholder(DEFAULT_SETTINGS.tools5eUrl)
                 .setValue(this.plugin.settings.get('tools5eUrl'))
@@ -75,8 +86,8 @@ export class Tools5eTagLinkPluginSettingsTab extends PluginSettingTab {
                 })));
 
         new Setting(containerEl)
-            .setName('Homebrew Repository Url (Optional)')
-            .setDesc('The URL of your homebrew repository (must be on GitHub)')
+            .setName('Homebrew repository url (Optional)')
+            .setDesc('The URL of your homebrew repository (must be on GitHub).')
             .addText(text => text
                 .setPlaceholder(DEFAULT_SETTINGS.homebrewRepoUrl)
                 .setValue(this.plugin.settings.get('homebrewRepoUrl'))
@@ -86,8 +97,8 @@ export class Tools5eTagLinkPluginSettingsTab extends PluginSettingTab {
                 })));
 
         new Setting(containerEl)
-            .setName('Open Gate Id (Optional)')
-            .setDesc('The id of the 5etools open gate')
+            .setName('Open Gate id (Optional)')
+            .setDesc('The id of the 5etools open gate.')
             .addText(text => text
                 // .setDisabled(this.plugin.settings.getOrDefault('mode') !== 'opengate')
                 .setPlaceholder(DEFAULT_SETTINGS.openGateId)
@@ -98,8 +109,8 @@ export class Tools5eTagLinkPluginSettingsTab extends PluginSettingTab {
                 })));
 
         new Setting(containerEl)
-            .setName('Open Gate Title (Optional)')
-            .setDesc('The title of the 5etools open gate')
+            .setName('Open Gate title (Optional)')
+            .setDesc('The title of the 5etools open gate.')
             .addText(text => text
                 // .setDisabled(this.plugin.settings.getOrDefault('mode') !== 'opengate')
                 .setPlaceholder(DEFAULT_SETTINGS.openGateTitle)
@@ -110,8 +121,8 @@ export class Tools5eTagLinkPluginSettingsTab extends PluginSettingTab {
                 })));
 
         new Setting(containerEl)
-            .setName('Clear Cache')
-            .setDesc('Remove all cached data')
+            .setName('Clear cache')
+            .setDesc('Remove all cached data.')
             .addButton(btn => btn
                 .setIcon('trash')
                 .setWarning()
