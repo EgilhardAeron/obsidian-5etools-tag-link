@@ -1,3 +1,4 @@
+import { Api } from "api/api";
 import Tools5eTagLinkPlugin from "main";
 import { App, Component, MarkdownPostProcessorContext } from "obsidian";
 import Tools5eTagLinkPluginSettings from 'settings/settings';
@@ -6,53 +7,45 @@ import { Renderer as Renderer_ } from '../5etools/js/render';
 const Renderer: typeof Renderer_ & {
     splitByTags: (arg: string) => string[];
     splitFirstSpace: (arg: string) => string[];
-    utils: { getTagMeta: (tag: string, text: string) => { name: string, page: string, hash: string, displayText: string | null } };
+    utils: { getTagMeta: (tag: string, text: string) => { name: string, page: string, source: string, hash: string, displayText: string | null } };
 } = Renderer_ as any;
 
 export class TagProcessor extends Component {
     app: App;
     settings: Tools5eTagLinkPluginSettings;
+    api: Api;
 
     initialize(plugin: Tools5eTagLinkPlugin) {
         this.app = plugin.app;
         this.settings = plugin.settings;
+        this.api = new Api();
+        this.api.initialize(plugin);
     }
 
     async postprocessor(element: HTMLElement, context: MarkdownPostProcessorContext) {
-        const entries = element.findAll("p, li, td");
+        const entries = element.findAll("code");
 
         for (let entry of entries) {
-            const links = this.getLinks(entry.innerHTML);
+            if (!entry.innerHTML) continue;
+            const links = await this.getLinks(entry.innerHTML);
 
-            for (let i = 0; i < entry.childNodes.length; i++) {
-                const childNode = entry.childNodes.item(i);
-                if (!childNode.nodeValue) continue;
-
-                let anyChange = false;
-                for (const { tagText, span } of links) {
-                    if (!childNode.nodeValue.contains(tagText)) continue;
-                    anyChange = true;
-                    childNode.nodeValue = childNode.nodeValue.replace(tagText, span.outerHTML);
-
-                }
-                if (anyChange) {
-                    const newSpan = createSpan();
-                    newSpan.innerHTML = childNode.nodeValue;
-                    childNode.replaceWith(newSpan);
-                }
+            for (const { tagText, spanTag, anchor } of links) {
+                const newSpan = createSpan();
+                newSpan.innerHTML = entry.innerHTML.replace(tagText, `${spanTag.outerHTML}${anchor ? anchor.outerHTML : ''}`);
+                entry.replaceWith(newSpan);
             }
         }
     }
 
-    getLinks(content: string) {
+    async getLinks(content: string) {
         if (!content) return [];
         const tagsInText = Renderer.splitByTags(content).filter((x: string) => x.startsWith('{@'));
         if (!tagsInText.length) return [];
 
         let currentPos = 0;
-        const links = tagsInText
+        const links = await Promise.all(tagsInText
             .filter(tagText => tagText.endsWith("}"))
-            .map((tagText) => {
+            .map(async (tagText) => {
                 const start = content.indexOf(tagText, currentPos);
                 const end = start + tagText.length;
                 currentPos = end;
@@ -64,30 +57,34 @@ export class TagProcessor extends Component {
                 try {
                     if (!text) throw new Error(`No tag text`);
 
-                    const { name, page, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
+                    const { name, page, source, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
+                    await this.api.downloadData(tag, source, hash, name);
+
                     const baseUrl = this.generateBaseUrl(tag, page, hash);
                     const url = this.generateUrl(baseUrl);
                     const icon = this.getIcon(tag);
                     const { color = "Black", hoverColor = "DarkSlateGray", bgColor = 'LightGray' } = this.getColors(tag);
                     const shortenedTagText = this.shortenTagText(tagText, displayText);
 
-                    const span = createSpan();
-                    span.setAttribute('style', `background-color: ${bgColor}; padding: 2px 4px; border-radius: 4px; `);
-                    span.innerHTML = `<a 
-                    onmouseover="this.style.color='${hoverColor}'" 
-                    onmouseout="this.style.color='${color}'" 
-                    style="color: ${color};" 
-                    href="${url}"
-                >${icon ? icon + ' ' : ''}${displayText ?? name ?? '<EMPTY>'}</a>`;
-                    return { tagText, tag, text, span, displayText, shortenedTagText, start, end };
+
+                    const spanTag = createSpan();
+                    spanTag.setAttribute('style', `background-color: ${bgColor}; color: ${color}; padding: 2px 4px; border-radius: 4px; `);
+                    spanTag.innerText = `${icon ? icon + ' ' : ''}${displayText ?? name ?? ''}`;
+
+                    const anchor = createEl('button');
+                    anchor.setAttribute('onclick', `location.href = "${url}"`);
+                    anchor.setAttribute('class', `clickable-icon`);
+                    anchor.setAttribute('style', `display: inline; font-weight: 700; color: #777777`);
+                    anchor.innerHTML = `⧉`;
+
+                    return { tagText, tag, text, spanTag, anchor, displayText, shortenedTagText, start, end };
                 } catch (err) {
-                    const span = createSpan()
-                    span.setAttribute('style', `background-color: IndianRed; padding: 2px 4px; border-radius: 4px; `);
-                    span.innerHTML = text;
-                    span.innerHTML += `Error: ${err?.message}`;
-                    return { tagText, tag, text, span, displayText: null, shortenedTagText: null, start, end, err }
+                    const spanTag = createSpan()
+                    spanTag.setAttribute('style', `background-color: IndianRed; padding: 2px 4px; border-radius: 4px; `);
+                    spanTag.innerHTML = `${text} ⚠️ ${err.message}`;
+                    return { tagText, tag, text, spanTag, anchor: null , displayText: null, shortenedTagText: null, start, end, err }
                 }
-            });
+            }));
 
         return links;
     }
@@ -104,7 +101,7 @@ export class TagProcessor extends Component {
     }
 
     private fixText(text: string) {
-        return text.replace(/;/g, '|');
+        return text.replace(/\\/g, '');
     }
 
     private shortenTagText(tagText: string, displayText: string | null) {

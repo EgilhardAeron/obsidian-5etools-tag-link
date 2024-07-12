@@ -24,7 +24,7 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 			this.processor.postprocessor(element, context)
 		});
 		this.registerEditorExtension([inlinePlugin(this)]);
-	}
+	}	
 
 	onunload() {
 
