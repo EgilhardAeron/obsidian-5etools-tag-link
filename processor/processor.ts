@@ -59,8 +59,11 @@ export class TagProcessor extends Component {
                     if (!text) throw new Error(`No tag text`);
 
                     let { name, page, source, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
-                    const { entry: data, sourceInfo } = await this.api.downloadData(tag, source, hash, name);
-                    hash = this.fixHash(hash, data);
+                    const dataResult = await this.api.downloadData(tag, source, hash, name);
+                    const { entry: data, sourceInfo } = dataResult;
+                    if (data) {
+                        hash = this.fixHash(hash, data);
+                    }
 
                     const baseUrl = this.generateBaseUrl(tag, page, hash);
                     const url = this.generateUrl(baseUrl);
@@ -90,6 +93,7 @@ export class TagProcessor extends Component {
 
                     return { tagText, tag, text, spanTag, anchor, displayText, shortenedTagText, start, end };
                 } catch (err) {
+                    console.log('5eTools Tag Link Plugin error', err);
                     const spanTag = createSpan()
                     spanTag.setAttribute('style', `background-color: IndianRed; padding: 2px 4px; border-radius: 4px; `);
                     spanTag.innerHTML = `${text} ⚠️ ${err.message}`;

@@ -168,7 +168,7 @@ export class Api {
 
         const files = await getJsonFiles(tag, source);
         if (!files) throw new Error(`not found`);
-        if (!files.length) return undefined;
+        if (!files.length) return { entry: undefined, sourceInfo: undefined };
 
         const data = await getData(files.flatMap(x => x.file), hash, name, source);
         if (!data.entry) throw new Error(`not found`);
