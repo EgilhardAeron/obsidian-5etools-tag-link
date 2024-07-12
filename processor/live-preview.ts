@@ -1,14 +1,15 @@
 import { syntaxTree } from "@codemirror/language";
-import { EditorSelection, Range } from "@codemirror/state";
+import { EditorSelection, Range, StateEffect, StateField, Text } from "@codemirror/state";
 import {
     type DecorationSet,
     Decoration,
     EditorView,
     ViewPlugin,
     ViewUpdate,
-    WidgetType
+    WidgetType,
 } from "@codemirror/view";
 import { type SyntaxNode } from '@lezer/common';
+import { createHash, Hash } from "crypto";
 import { flatten } from "lodash";
 import Tools5eTagLinkPlugin from "main";
 import {
@@ -28,17 +29,35 @@ function selectionAndRangeOverlap(
     return false;
 }
 
+const RenderResultEffects = StateEffect.define<DecorationSet>();
+
+export const renderResultField = StateField.define<DecorationSet>({
+    create(state) {
+        return Decoration.none;
+    },
+    update(value, tr) {
+        for (let effect of tr.effects) {
+            if (effect.is(RenderResultEffects)) {
+                return effect.value
+            }
+        }
+        return value
+    },
+    provide(field: StateField<DecorationSet>) {
+        return EditorView.decorations.from(field);
+    },
+});
+
 export function inlinePlugin(plugin: Tools5eTagLinkPlugin) {
     return ViewPlugin.fromClass(
         class {
-            decorations: DecorationSet;
-
-            constructor(view: EditorView) {
-                this.decorations = Decoration.none;
-            }
-
             async update(update: ViewUpdate) {
                 if (!update.state.field(editorLivePreviewField)) {
+                    setTimeout(() => {
+                        update.view.dispatch({
+                            effects: RenderResultEffects.of(Decoration.none)
+                        })
+                    }, 20);
                     return;
                 }
 
@@ -87,7 +106,7 @@ export function inlinePlugin(plugin: Tools5eTagLinkPlugin) {
                             }
 
                             const tagWidget = new TagWidget(link.spanTag);
-                            widgetsInNode.push(Decoration.replace({ widget: tagWidget }).range(start, end));
+                            widgetsInNode.push(Decoration.replace({ widget: tagWidget, }).range(start, end));
 
                             if (link.anchor) {
                                 // handle nested code blocks
@@ -101,27 +120,38 @@ export function inlinePlugin(plugin: Tools5eTagLinkPlugin) {
                                     return 0;
                                 })();
                                 const anchorWidget = new AnchorWidget(link.anchor);
-                                widgetsInNode.push(Decoration.widget({ widget: anchorWidget }).range(end + count));
+                                widgetsInNode.push(Decoration.replace({ widget: anchorWidget, }).range(end + count, end + count + 1));
                             }
                         }
                         return widgetsInNode;
                     }));
 
                     const decorations = Decoration.set(flatten(widgets), true);
-                    this.decorations = decorations;
+                    update.view.dispatch({
+                        effects: RenderResultEffects.of(decorations)
+                    })
                 }
             }
         },
-        { decorations: (v) => v.decorations }
     );
 }
 
 
 
 export class TagWidget extends WidgetType {
+    readonly hash: string;
+
     constructor(
-        private spanTag: HTMLElement
-    ) { super(); }
+        private readonly spanTag: HTMLElement,
+    ) {
+        super();
+        this.hash = createHash('sha256').update(this.spanTag.outerHTML).digest('base64');
+    }
+
+    eq(other: WidgetType) {
+        if (!(other instanceof AnchorWidget)) return false;
+        return this.hash === other.hash;
+    }
 
     toDOM(view: EditorView): HTMLElement {
         const span = createSpan()
@@ -135,9 +165,19 @@ export class TagWidget extends WidgetType {
 }
 
 export class AnchorWidget extends WidgetType {
+    readonly hash: string;
+
     constructor(
         private anchor: HTMLElement
-    ) { super(); }
+    ) {
+        super();
+        this.hash = createHash('sha256').update(this.anchor.outerHTML).digest('base64');
+    }
+
+    eq(other: WidgetType) {
+        if (!(other instanceof AnchorWidget)) return false;
+        return this.hash === other.hash;
+    }
 
     toDOM(view: EditorView): HTMLElement {
         const span = createSpan()

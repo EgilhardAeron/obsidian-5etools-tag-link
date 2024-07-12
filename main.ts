@@ -1,7 +1,7 @@
 import { isEqual, pick } from 'lodash';
 import { Notice, Plugin } from 'obsidian';
 import { OpenGatePlugin } from 'open-gate';
-import { inlinePlugin } from 'processor/live-preview';
+import { inlinePlugin, renderResultField } from 'processor/live-preview';
 import { TagProcessor } from 'processor/processor';
 import Tools5eTagLinkPluginSettings, { Tools5eTagLinkPluginSettingsTab } from 'settings/settings';
 
@@ -23,7 +23,7 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 		this.registerMarkdownPostProcessor((element, context) => {
 			this.processor.postprocessor(element, context)
 		});
-		this.registerEditorExtension([inlinePlugin(this)]);
+		this.registerEditorExtension([inlinePlugin(this), renderResultField]);
 	}	
 
 	onunload() {
