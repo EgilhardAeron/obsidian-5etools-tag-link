@@ -96,7 +96,7 @@ export function inlinePlugin(plugin: Tools5eTagLinkPlugin) {
 
                         for (const link of links) {
                             const start = node.from;
-                            const end = node.to;
+                            let end = node.to;
                             widgetsInNode.push(Decoration.mark({ attributes: { style: "font-weight: 700; font-style: italic;" } }).range(start, end));
 
                             const overlaps = selectionAndRangeOverlap(selection, start, end);
@@ -106,21 +106,12 @@ export function inlinePlugin(plugin: Tools5eTagLinkPlugin) {
                             }
 
                             const tagWidget = new TagWidget(link.spanTag);
+                            if (link.anchor) end = end - 1;
                             widgetsInNode.push(Decoration.replace({ widget: tagWidget, }).range(start, end));
 
                             if (link.anchor) {
-                                // handle nested code blocks
-                                const after = update.view.state.doc.sliceString(node.to);
-                                const count = (() => {
-                                    let i = 0;
-                                    while (i < after.length) {
-                                        if (after[i] !== '`') return i;
-                                        i++;
-                                    }
-                                    return 0;
-                                })();
                                 const anchorWidget = new AnchorWidget(link.anchor);
-                                widgetsInNode.push(Decoration.replace({ widget: anchorWidget, }).range(end + count, end + count + 1));
+                                widgetsInNode.push(Decoration.replace({ widget: anchorWidget, }).range(end, end + 1));
                             }
                         }
                         return widgetsInNode;
