@@ -33,6 +33,7 @@ export class TagProcessor extends Component {
 
             for (const { tagText, spanTag, anchor } of links) {
                 const newSpan = createSpan();
+                newSpan.setAttribute('style', `white-space: nowrap;`);
                 newSpan.innerHTML = entry.innerHTML.replace(tagText, `${spanTag.outerHTML}${anchor ? anchor.outerHTML : ''}`);
                 entry.replaceWith(newSpan);
             }
@@ -73,7 +74,7 @@ export class TagProcessor extends Component {
                     const shortenedTagText = this.shortenTagText(tagText, displayText);
 
                     const spanTag = createSpan();
-                    spanTag.setAttribute('style', `background-color: ${bgColor}; color: ${color}; padding: 2px 4px; border-radius: 4px; `);
+                    spanTag.setAttribute('style', `background-color: ${bgColor}; color: ${color}; padding: 2px 4px; border-radius: 4px; white-space: nowrap;`);
                     spanTag.innerHTML = `${icon ? icon + ' ' : ''}${displayText ?? name ?? ''}${sourceInfo ? ' ' : ''}`;
 
                     if (sourceInfo) {
