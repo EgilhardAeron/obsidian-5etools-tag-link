@@ -3,6 +3,7 @@ import { get, mapKeys } from 'lodash';
 import Tools5eTagLinkPlugin from "main";
 import { App, Notice } from "obsidian";
 import Tools5eTagLinkPluginSettings from 'settings/settings';
+import Parser from './sources';
 
 export class Api {
     app: App;
@@ -121,22 +122,35 @@ export class Api {
             }
 
             function getDataByTag(tag: string, fileData: any[], name: string, source: string) {
-                const findByNameAndSource = <T extends { source: string; name: string; }>(data: T[][], paths: string[]) => {
-                    name = name.toLowerCase();
-                    source = source.toLowerCase();
-
+                const findByNameAndSource = <T extends { name: string; source: string | undefined; srd: string | boolean | undefined }>(data: any[], paths: string[]) => {
                     let entry: any = undefined;
-                    data.find(d => paths.find(p => {
-                        const dataAtPath = get(d, p) as any[];
+                    let sourceInfo: { abbr: string, fullname?: string } = { abbr: source.toLowerCase() };
+                    data.some(d => paths.some(p => {
+                        const dataAtPath = get(d, p) as T[];
                         if (!dataAtPath) return false;
 
-                        dataAtPath.find(x => {
-                            const found = (x.name.toLowerCase() === name.toLowerCase() || (typeof (x.srd) === 'string' ? x.srd.toLowerCase() === name.toLowerCase() : false)) && (!x.source || x.source.toLowerCase() === source.toLowerCase());
-                            if (found) entry = x;
+                        dataAtPath.some(x => {
+                            const found = (x.name.toLowerCase() === name.toLowerCase() || (x.srd && typeof (x.srd) === 'string' ? x.srd.toLowerCase() === name.toLowerCase() : false)) && (!x.source || x.source.toLowerCase() === source.toLowerCase());
+                            if (found) {
+                                entry = x;
+
+                                const brewSources = d._meta?.sources as { json: string, abbreviation: string, full: string }[] | undefined;
+                                if (brewSources && entry.source) {
+                                    const brewSource = brewSources.find(x => x.json === entry.source);
+                                    if (brewSource) {
+                                        sourceInfo = { abbr: brewSource.abbreviation, fullname: brewSource.full }
+                                    }
+                                } else if (entry.source) {
+                                    const wotcSource = Parser.SOURCE_JSON_TO_FULL[entry.source];
+                                    if (wotcSource) {
+                                        sourceInfo = { abbr: entry.source, fullname: wotcSource };
+                                    }
+                                }
+                            }
                             return found;
                         })
                     }));
-                    return entry;
+                    return { entry, sourceInfo };
                 }
 
                 switch (tag) {
@@ -157,7 +171,7 @@ export class Api {
         if (!files.length) return undefined;
 
         const data = await getData(files.flatMap(x => x.file), hash, name, source);
-        if (!data) throw new Error(`not found`);
+        if (!data.entry) throw new Error(`not found`);
 
         return data;
     }

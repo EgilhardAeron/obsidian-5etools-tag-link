@@ -2,6 +2,7 @@ import { Api } from "api/api";
 import Tools5eTagLinkPlugin from "main";
 import { App, Component, MarkdownPostProcessorContext } from "obsidian";
 import Tools5eTagLinkPluginSettings from 'settings/settings';
+
 import { Renderer as Renderer_ } from '../5etools/js/render';
 
 const Renderer: typeof Renderer_ & {
@@ -58,7 +59,7 @@ export class TagProcessor extends Component {
                     if (!text) throw new Error(`No tag text`);
 
                     let { name, page, source, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
-                    const data = await this.api.downloadData(tag, source, hash, name);
+                    const { entry: data, sourceInfo } = await this.api.downloadData(tag, source, hash, name);
                     hash = this.fixHash(hash, data);
 
                     const baseUrl = this.generateBaseUrl(tag, page, hash);
@@ -69,7 +70,17 @@ export class TagProcessor extends Component {
 
                     const spanTag = createSpan();
                     spanTag.setAttribute('style', `background-color: ${bgColor}; color: ${color}; padding: 2px 4px; border-radius: 4px; `);
-                    spanTag.innerText = `${icon ? icon + ' ' : ''}${displayText ?? name ?? ''}`;
+                    spanTag.innerHTML = `${icon ? icon + ' ' : ''}${displayText ?? name ?? ''}${sourceInfo ? ' ' : ''}`;
+
+                    if (sourceInfo) {
+                        const { abbr, fullname } = sourceInfo;
+                        const abbrSource = spanTag.createEl('abbr');
+                        abbrSource.setAttribute('style', `font-size: smaller; font-variant: small-caps; text-decoration-thickness: 1px;`);
+                        if (fullname) {
+                            abbrSource.setAttribute('title', fullname);
+                        }
+                        abbrSource.innerHTML = `<small>${abbr}</small>`;
+                    }
 
                     const anchor = createEl('button');
                     anchor.setAttribute('onclick', `location.href = "${url}"`);
@@ -82,7 +93,7 @@ export class TagProcessor extends Component {
                     const spanTag = createSpan()
                     spanTag.setAttribute('style', `background-color: IndianRed; padding: 2px 4px; border-radius: 4px; `);
                     spanTag.innerHTML = `${text} ⚠️ ${err.message}`;
-                    return { tagText, tag, text, spanTag, anchor: null , displayText: null, shortenedTagText: null, start, end, err }
+                    return { tagText, tag, text, spanTag, anchor: null, displayText: null, shortenedTagText: null, start, end, err }
                 }
             }));
 
@@ -90,8 +101,7 @@ export class TagProcessor extends Component {
     }
 
     fixHash(hash: string, data: any): string {
-        if (typeof data['srd'] !== 'string') return hash;
-        console.log(hash, data);
+        if (!(data.srd && typeof data.srd === 'string')) return hash;
         const [pageHash, sourceHash] = hash.split('_');
         return `${encodeURIComponent(data.name.toLowerCase())}_${sourceHash}`;
     }
