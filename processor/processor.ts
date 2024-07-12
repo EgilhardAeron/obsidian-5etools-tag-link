@@ -4,6 +4,7 @@ import { App, Component, MarkdownPostProcessorContext } from "obsidian";
 import Tools5eTagLinkPluginSettings from 'settings/settings';
 
 import { Renderer as Renderer_ } from '../5etools/js/render';
+import { PLUGIN_NAME } from "../constants";
 
 const Renderer: typeof Renderer_ & {
     splitByTags: (arg: string) => string[];
@@ -93,7 +94,7 @@ export class TagProcessor extends Component {
 
                     return { tagText, tag, text, spanTag, anchor, displayText, shortenedTagText, start, end };
                 } catch (err) {
-                    console.log('5eTools Tag Link Plugin error', err);
+                    console.log(`${PLUGIN_NAME} error`, err);
                     const spanTag = createSpan()
                     spanTag.setAttribute('style', `background-color: IndianRed; padding: 2px 4px; border-radius: 4px; `);
                     spanTag.innerHTML = `${text} ⚠️ ${err.message}`;

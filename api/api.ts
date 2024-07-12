@@ -1,3 +1,4 @@
+import { PLUGIN_NAME } from './../constants';
 import { Mutex, withTimeout } from 'async-mutex';
 import { get, mapKeys } from 'lodash';
 import Tools5eTagLinkPlugin from "main";
@@ -25,7 +26,7 @@ export class Api {
     }
 
     async clearCache() {
-        new Notice(`Clearing cached data...`);
+        new Notice(`${PLUGIN_NAME}: Clearing cached data...`);
         this.fileCache = new Map<string, any>();
         this.fileCacheLock.release();
 
@@ -46,7 +47,7 @@ export class Api {
             const data = await (await fetch(url)).json();
             this.homebrewIndex = mapKeys(data, (v, k) => k.toLowerCase());
         } catch (err) {
-            new Notice(`Could not get homebrew index from url '${url}'. Check your settings`);
+            new Notice(`${PLUGIN_NAME}: Could not get homebrew index from url '${url}'. Check your settings`);
         }
     }
 
@@ -66,7 +67,7 @@ export class Api {
                             this.fileCache.set(brewSource, data);
                         } catch (err) {
                             this.fileCache.set(brewSource, null);
-                            new Notice(`Could not get homebrew '${brewSource}'`);
+                            new Notice(`${PLUGIN_NAME}: Could not get homebrew '${brewSource}'`);
                         }
                     }
                 } finally {
@@ -85,7 +86,7 @@ export class Api {
                                 this.fileCache.set(filename, data);
                             } catch (err) {
                                 this.fileCache.set(filename, null);
-                                new Notice(`Could not get json '${filename}'`);
+                                new Notice(`${PLUGIN_NAME}: Could not get json '${filename}'`);
                             }
                         }
                     }

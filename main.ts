@@ -1,3 +1,4 @@
+import { PLUGIN_NAME } from './constants';
 import { isEqual, pick } from 'lodash';
 import { Notice, Plugin } from 'obsidian';
 import { OpenGatePlugin } from 'open-gate';
@@ -26,8 +27,8 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 		this.registerEditorExtension([inlinePlugin(this), renderResultField]);
 	}	
 
-	onunload() {
-
+	async onunload() {
+		await this.processor.api.clearCache()
 	}
 
 	async loadSettings() {
@@ -35,11 +36,11 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 			const opengatePlugin = await this.getPlugin<OpenGatePlugin>('open-gate');
 			switch (true) {
 				case opengatePlugin === undefined: {
-					new Notice(`Could not inspect plugins... No further action taken.`);
+					new Notice(`${PLUGIN_NAME}: Could not inspect plugins... No further action taken.`);
 					break;
 				}
 				case opengatePlugin === null: {
-					new Notice(`No open-gate plugin found! Fallbacking to 'link' mode...`);
+					new Notice(`${PLUGIN_NAME}: No open-gate plugin found! Fallbacking to 'link' mode...`);
 					this.settings.set('mode', 'link');
 					break;
 				}
@@ -61,8 +62,6 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 						const fields = ['id', 'title', 'url', 'profileKey'];
 						if (!isEqual(pick(gate, fields), pick(settingsGate, fields))) {
 							opengatePlugin.addGate(settingsGate);
-						} else {
-							new Notice(`Gate '${settingsGate.title}' configured successfully!`);
 						}
 					}
 				}
