@@ -21,7 +21,7 @@ function selectionAndRangeOverlap(
     rangeTo: number
 ) {
     for (const range of selection.ranges) {
-        if (range.from <= rangeTo + 1 && range.to >= rangeFrom - 1) {
+        if (range.from <= rangeTo && range.to >= rangeFrom) {
             return true;
         }
     }
