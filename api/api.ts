@@ -81,7 +81,7 @@ export class Api {
                     for (const filename of filenames) {
                         if (!this.fileCache.has(filename)) {
                             try {
-                                const url = this.settings.getOrDefault('tools5eUrl') + 'data/' + filename;
+                                const url = this.settings.getOrDefault('tools5eUrl') + '/data/' + filename;
                                 const data = await (await fetch(url)).json();
                                 this.fileCache.set(filename, data);
                             } catch (err) {
