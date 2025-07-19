@@ -121,6 +121,17 @@ export class Tools5eTagLinkPluginSettingsTab extends PluginSettingTab {
                 })));
 
         new Setting(containerEl)
+            .setName('Ignored tags')
+            .setDesc('Comma-separated list of @tags that the plugin will not attempt to parse.')
+            .addText(text => text
+                .setPlaceholder('@ignoredTag1,@ignoredTag2')
+                .setValue(this.plugin.settings.get('ignoredTags').join(','))
+                .onChange(debounce(async (value: string) => {
+                    this.plugin.settings.set('ignoredTags', value.split(','));
+                    await this.plugin.saveSettings();
+                })));
+
+        new Setting(containerEl)
             .setName('Clear cache')
             .setDesc('Remove all cached data.')
             .addButton(btn => btn

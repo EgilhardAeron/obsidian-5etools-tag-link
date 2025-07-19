@@ -7,4 +7,5 @@ export interface Tools5eTagLinkPluginSettings {
 	openGateTitle: string;
 	openGateIcon: string;
 	openGateCss: string;
+	ignoredTags: string[];
 }

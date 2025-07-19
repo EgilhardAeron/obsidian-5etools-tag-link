@@ -2,7 +2,7 @@ import { PLUGIN_NAME } from './../constants';
 import { Mutex, withTimeout } from 'async-mutex';
 import { get, mapKeys } from 'lodash';
 import Tools5eTagLinkPlugin from "main";
-import { App, Notice } from "obsidian";
+import { App, Notice, requestUrl } from "obsidian";
 import Tools5eTagLinkPluginSettings from 'settings/settings';
 import Parser from './sources';
 
@@ -44,7 +44,7 @@ export class Api {
     async getHomebrewIndex() {
         const url = this.rawHomebrewRepoUrl + '/_generated/index-sources.json';
         try {
-            const data = await (await fetch(url)).json();
+            const data = (await requestUrl(url)).json;
             this.homebrewIndex = mapKeys(data, (v, k) => k.toLowerCase());
         } catch (err) {
             new Notice(`${PLUGIN_NAME}: Could not get homebrew index from url '${url}'. Check your settings`);
@@ -63,7 +63,7 @@ export class Api {
                     if (!this.fileCache.has(brewSource)) {
                         const url = this.rawHomebrewRepoUrl + '/' + brewSource;
                         try {
-                            const data = await (await fetch(url)).json();
+                            const data = (await requestUrl(url)).json;
                             this.fileCache.set(brewSource, data);
                         } catch (err) {
                             this.fileCache.set(brewSource, null);
@@ -82,7 +82,7 @@ export class Api {
                         if (!this.fileCache.has(filename)) {
                             try {
                                 const url = this.settings.getOrDefault('tools5eUrl') + '/data/' + filename;
-                                const data = await (await fetch(url)).json();
+                                const data = (await requestUrl(url)).json;
                                 this.fileCache.set(filename, data);
                             } catch (err) {
                                 this.fileCache.set(filename, null);

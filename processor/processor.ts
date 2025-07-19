@@ -5,6 +5,7 @@ import Tools5eTagLinkPluginSettings from 'settings/settings';
 
 import { Renderer as Renderer_ } from '../5etools/js/render';
 import { PLUGIN_NAME } from "../constants";
+import { notEmpty } from "utils";
 
 const Renderer: typeof Renderer_ & {
     splitByTags: (arg: string) => string[];
@@ -57,6 +58,10 @@ export class TagProcessor extends Component {
                 tag = this.fixTag(tag);
                 text = this.fixText(text);
 
+                if (this.settings.getOrDefault('ignoredTags').includes(tag)) {
+                    return null;
+                }
+
                 try {
                     if (!text) throw new Error(`No tag text`);
 
@@ -89,6 +94,7 @@ export class TagProcessor extends Component {
 
                     const anchor = createEl('button');
                     anchor.setAttribute('onclick', `location.href = "${url}"`);
+                    anchor.setAttribute('title', `Open in 5eTools`);
                     anchor.setAttribute('class', `clickable-icon`);
                     anchor.setAttribute('style', `display: inline; font-weight: 700; color: #777777`);
                     anchor.innerHTML = `⧉`;
@@ -103,7 +109,7 @@ export class TagProcessor extends Component {
                 }
             }));
 
-        return links;
+        return links.filter(notEmpty);
     }
 
     fixHash(hash: string, data: any): string {
