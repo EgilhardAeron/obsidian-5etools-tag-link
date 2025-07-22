@@ -66,7 +66,8 @@ export class TagProcessor extends Component {
                     if (!text) throw new Error(`No tag text`);
 
                     let { name, page, source, hash, displayText } = Renderer.utils.getTagMeta(tag, text);
-                    const dataResult = await this.api.downloadData(tag, source, hash, name);
+                    let dataResult = await this.api.downloadData(tag, source, hash, name);
+                    dataResult ??= {};
                     const { entry: data, sourceInfo } = dataResult;
                     if (data) {
                         hash = this.fixHash(hash, data);
