@@ -55,13 +55,13 @@ export default class Tools5eTagLinkPlugin extends Plugin {
 						hasRibbon: true,
 					};
 
-					const gate = opengatePlugin.findGateBy('id', settingsGate.id);
+					const gate = opengatePlugin!.findGateBy('id', settingsGate.id);
 					if (!gate) {
-						opengatePlugin.addGate(settingsGate);
+						opengatePlugin!.addGate(settingsGate);
 					} else {
 						const fields = ['id', 'title', 'url', 'profileKey'];
 						if (!isEqual(pick(gate, fields), pick(settingsGate, fields))) {
-							opengatePlugin.addGate(settingsGate);
+							opengatePlugin!.addGate(settingsGate);
 						}
 					}
 				}

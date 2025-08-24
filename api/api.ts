@@ -161,6 +161,8 @@ export class Api {
                         return findByNameAndSource(fileData, ['monster']);
                     case '@spell':
                         return findByNameAndSource(fileData, ['spell']);
+                    case '@table':                        
+                        return findByNameAndSource(fileData, ['table']);
                     default:
                         throw new Error(`tag '${tag}' not supported`);
                 }

@@ -1,7 +1,7 @@
 {
 	"id": "5etools-tag-link",
 	"name": "5eTools Tag Link",
-	"version": "1.0.0",
+	"version": "0.0.1",
 	"minAppVersion": "0.16.0",
 	"description": "Util to render 5e.tools tags in Markdown.",
 	"author": "egilhard.aeron",
